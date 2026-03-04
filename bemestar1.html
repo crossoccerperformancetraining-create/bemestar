@@ -1,0 +1,168 @@
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ProCoach V110 - Check-in</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <style>
+        body { background-color: #000; color: white; font-family: sans-serif; }
+        .login-card { background: #111; padding: 2rem; border-radius: 1.5rem; border: 1px solid #333; width: 100%; max-width: 400px; }
+        input[type=range] { accent-color: #22c55e; height: 10px; }
+        /* Estilo para a lista de dores */
+        .pain-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 20px; }
+        .pain-btn { background: #111; border: 1px solid #333; padding: 14px; border-radius: 12px; text-align: center; font-size: 11px; font-weight: bold; text-transform: uppercase; transition: all 0.2s; color: #a1a1aa; }
+        .pain-btn.active { background: #ef4444; border-color: #ef4444; color: white; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+        .custom-scroll { max-height: 50vh; overflow-y: auto; padding-right: 5px; }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqx0MYZ_QuDQFIkBqSGG17p_OUzTI-Bkw",
+            authDomain: "bem-estar-aee29.firebaseapp.com",
+            databaseURL: "https://bem-estar-aee29-default-rtdb.firebaseio.com",
+            projectId: "bem-estar-aee29",
+            storageBucket: "bem-estar-aee29.firebasestorage.app",
+            messagingSenderId: "672641883545",
+            appId: "1:672641883545:web:2d32126563816d139ac708"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.fbAuth = getAuth(app);
+        window.fbDb = getDatabase(app);
+        window.fbMethods = { signInWithEmailAndPassword, onAuthStateChanged, signOut, ref, set, serverTimestamp };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [step, setStep] = useState(1);
+            const [email, setEmail] = useState('');
+            const [pass, setPass] = useState('');
+            const [wellness, setWellness] = useState({ sono: 1, estresse: 1, fadiga: 1, dor: 1, humor: 1 });
+            const [selectedPain, setSelectedPain] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            // Lista baseada fielmente na sua imagem anatômica e necessidades de futebol
+            const locaisDor = [
+                "Pescoço", "Ombro D", "Ombro E", "Peitoral", "Costas (Sup)", "Lombar", 
+                "Abdômen", "Púbis", "Glúteo D", "Glúteo E", "Adutor D", "Adutor E", 
+                "Coxa Anterior D", "Coxa Anterior E", "Posterior Coxa D", "Posterior Coxa E", 
+                "Joelho D", "Joelho E", "Panturrilha D", "Panturrilha E", "Tornozelo D", 
+                "Tornozelo E", "Pé D", "Pé E"
+            ];
+
+            useEffect(() => {
+                const check = setInterval(() => {
+                    if (window.fbMethods?.onAuthStateChanged) {
+                        window.fbMethods.onAuthStateChanged(window.fbAuth, (u) => { setUser(u); setLoading(false); });
+                        clearInterval(check);
+                    }
+                }, 500);
+            }, []);
+
+            const togglePain = (local) => {
+                setSelectedPain(prev => prev.includes(local) ? prev.filter(l => l !== local) : [...prev, local]);
+            };
+
+            const handleSave = () => {
+                const dataHoje = new Date().toISOString().split('T')[0];
+                const path = `checkins/${dataHoje}/${user.uid}`;
+                window.fbMethods.set(window.fbMethods.ref(window.fbDb, path), {
+                    atleta: user.email,
+                    wellness: wellness,
+                    dores: selectedPain,
+                    timestamp: window.fbMethods.serverTimestamp()
+                }).then(() => {
+                    alert("Enviado com sucesso! Treine com inteligência.");
+                    window.fbMethods.signOut(window.fbAuth);
+                });
+            };
+
+            if (loading) return <div className="h-screen flex items-center justify-center bg-black">Carregando...</div>;
+
+            if (!user) {
+                return (
+                    <div className="h-screen flex items-center justify-center p-4 bg-black">
+                        <div className="login-card shadow-2xl border-zinc-800">
+                            <h2 className="text-2xl font-black mb-8 text-center text-green-500 italic tracking-tighter uppercase">ProCoach Login</h2>
+                            <input type="email" placeholder="E-mail do Atleta" className="w-full p-4 mb-4 rounded-xl bg-black border border-zinc-800 text-white outline-none focus:border-green-500" onChange={e => setEmail(e.target.value)} />
+                            <input type="password" placeholder="Senha" className="w-full p-4 mb-8 rounded-xl bg-black border border-zinc-800 text-white outline-none focus:border-green-500" onChange={e => setPass(e.target.value)} />
+                            <button onClick={() => window.fbMethods.signInWithEmailAndPassword(window.fbAuth, email, pass).catch(e => alert("Dados incorretos!"))} 
+                                className="w-full bg-green-600 p-4 rounded-xl font-bold uppercase tracking-widest active:scale-95 transition-all">Entrar</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-black p-4 max-w-md mx-auto">
+                    <header className="flex justify-between items-center mb-8 pb-4 border-b border-zinc-800">
+                        <span className="font-black text-green-500 italic tracking-tighter text-lg uppercase">ProCoach V110</span>
+                        <button onClick={() => window.fbMethods.signOut(window.fbAuth)} className="text-[10px] text-zinc-500 font-bold uppercase border border-zinc-800 px-3 py-1 rounded-lg">Sair</button>
+                    </header>
+
+                    {step === 1 ? (
+                        <div className="space-y-6">
+                            <h2 className="text-xl font-bold text-center uppercase tracking-widest text-zinc-300">Bem-Estar (1-7)</h2>
+                            {[
+                                { id: 'sono', label: 'Qualidade do Sono' },
+                                { id: 'estresse', label: 'Estresse' },
+                                { id: 'fadiga', label: 'Fadiga' },
+                                { id: 'dor', label: 'Dor Muscular' },
+                                { id: 'humor', label: 'Humor' }
+                            ].map(item => (
+                                <div key={item.id} className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800">
+                                    <div className="flex justify-between font-bold text-sm mb-3">
+                                        <span className="text-zinc-400 uppercase text-[11px] tracking-wide">{item.label}</span>
+                                        <span className="text-green-500 text-lg font-black">{wellness[item.id]}</span>
+                                    </div>
+                                    <input type="range" min="1" max="7" value={wellness[item.id]} 
+                                        onChange={(e) => setWellness({...wellness, [item.id]: parseInt(e.target.value)})} 
+                                        className="w-full appearance-none bg-zinc-800 rounded-lg cursor-pointer" />
+                                </div>
+                            ))}
+                            <button onClick={() => setStep(2)} className="w-full bg-green-600 p-5 rounded-2xl font-black text-lg uppercase shadow-lg mt-4 active:scale-95 transition-all">Próximo: Local da Dor</button>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            <h2 className="text-xl font-bold text-center uppercase tracking-widest text-zinc-300">Onde dói?</h2>
+                            <div className="custom-scroll">
+                                <div className="pain-list">
+                                    {locaisDor.map(local => (
+                                        <button key={local} onClick={() => togglePain(local)} 
+                                            className={`pain-btn ${selectedPain.includes(local) ? 'active' : ''}`}>
+                                            {local}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="pt-4 space-y-3">
+                                <button onClick={handleSave} className="w-full bg-green-600 p-5 rounded-2xl font-black text-xl uppercase shadow-2xl active:scale-95 transition-all">Finalizar</button>
+                                <button onClick={() => setStep(1)} className="w-full text-zinc-500 font-bold uppercase text-[10px] tracking-widest py-2">Voltar para Notas</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
