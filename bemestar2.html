@@ -1,0 +1,154 @@
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ProCoach V110 - Elite System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <style>
+        body { background-color: #000; color: white; font-family: sans-serif; overflow-x: hidden; }
+        .login-card { background: #111; padding: 2rem; border-radius: 1.5rem; border: 1px solid #333; width: 100%; max-width: 400px; }
+        input[type=range] { accent-color: #22c55e; height: 10px; }
+        .pain-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .pain-btn { background: #111; border: 1px solid #333; padding: 14px; border-radius: 12px; text-align: center; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #a1a1aa; }
+        .pain-btn.active { background: #ef4444; border-color: #ef4444; color: white; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+        .custom-scroll { max-height: 50vh; overflow-y: auto; padding-right: 5px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqx0MYZ_QuDQFIkBqSGG17p_OUzTI-Bkw",
+            authDomain: "bem-estar-aee29.firebaseapp.com",
+            databaseURL: "https://bem-estar-aee29-default-rtdb.firebaseio.com",
+            projectId: "bem-estar-aee29",
+            storageBucket: "bem-estar-aee29.firebasestorage.app",
+            messagingSenderId: "672641883545",
+            appId: "1:672641883545:web:2d32126563816d139ac708"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.fbAuth = getAuth(app);
+        window.fbDb = getDatabase(app);
+        window.fbMethods = { signInWithEmailAndPassword, onAuthStateChanged, signOut, ref, set, onValue, serverTimestamp };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- COMPONENTE DO ATLETA ---
+        const AthleteView = ({ user }) => {
+            const [step, setStep] = useState(1);
+            const [wellness, setWellness] = useState({ sono: 1, estresse: 1, fadiga: 1, dor: 1, humor: 1 });
+            const [selectedPain, setSelectedPain] = useState([]);
+            const locaisDor = ["Pescoço", "Ombro D", "Ombro E", "Peitoral", "Costas (Sup)", "Lombar", "Abdômen", "Púbis", "Glúteo D", "Glúteo E", "Adutor D", "Adutor E", "Coxa Anterior D", "Coxa Anterior E", "Posterior Coxa D", "Posterior Coxa E", "Joelho D", "Joelho E", "Panturrilha D", "Panturrilha E", "Tornozelo D", "Tornozelo E", "Pé D", "Pé E"];
+
+            const salvar = () => {
+                const dataHoje = new Date().toISOString().split('T')[0];
+                window.fbMethods.set(window.fbMethods.ref(window.fbDb, `checkins/${dataHoje}/${user.uid}`), {
+                    atleta: user.email,
+                    wellness: wellness,
+                    dores: selectedPain,
+                    timestamp: window.fbMethods.serverTimestamp()
+                }).then(() => { alert("Enviado com sucesso!"); window.fbMethods.signOut(window.fbAuth); });
+            };
+
+            return (
+                <div className="p-4 max-w-md mx-auto">
+                    <h2 className="text-green-500 font-black mb-6 italic uppercase">Check-in Pré-Treino</h2>
+                    {step === 1 ? (
+                        <div className="space-y-4">
+                            {['sono', 'estresse', 'fadiga', 'dor', 'humor'].map(id => (
+                                <div key={id} className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                                    <div className="flex justify-between text-xs font-bold uppercase mb-2"><span>{id} (1-7)</span><span className="text-green-500">{wellness[id]}</span></div>
+                                    <input type="range" min="1" max="7" value={wellness[id]} onChange={e => setWellness({...wellness, [id]: parseInt(e.target.value)})} className="w-full" />
+                                </div>
+                            ))}
+                            <button onClick={() => setStep(2)} className="w-full bg-green-600 p-4 rounded-xl font-black uppercase mt-4">Próximo: Dores</button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="custom-scroll"><div className="pain-list">{locaisDor.map(l => (
+                                <button key={l} onClick={() => setSelectedPain(p => p.includes(l) ? p.filter(x=>x!==l) : [...p, l])} className={`pain-btn ${selectedPain.includes(l) ? 'active' : ''}`}>{l}</button>
+                            ))}</div></div>
+                            <button onClick={salvar} className="w-full bg-green-600 p-4 rounded-xl font-black uppercase mt-4">Finalizar</button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- COMPONENTE DO TREINADOR (Dashboard) ---
+        const CoachView = () => {
+            const [data, setData] = useState({});
+            useEffect(() => {
+                const dataHoje = new Date().toISOString().split('T')[0];
+                const ref = window.fbMethods.ref(window.fbDb, `checkins/${dataHoje}`);
+                window.fbMethods.onValue(ref, (snap) => setData(snap.val() || {}));
+            }, []);
+
+            return (
+                <div className="p-6">
+                    <h2 className="text-2xl font-black text-green-500 mb-6 italic uppercase">Dashboard ProCoach</h2>
+                    <div className="grid gap-4">
+                        {Object.entries(data).map(([uid, check]) => (
+                            <div key={uid} className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex justify-between items-center">
+                                <div><p className="font-bold text-sm">{check.atleta}</p><p className="text-[10px] text-red-500 font-bold uppercase">Dores: {check.dores?.join(', ') || 'Nenhuma'}</p></div>
+                                <div className="text-xl font-black text-green-500">{Object.values(check.wellness || {}).reduce((a,b)=>a+b,0)} <span className="text-[8px] text-zinc-500 block uppercase">Wellness</span></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [email, setEmail] = useState('');
+            const [pass, setPass] = useState('');
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const check = setInterval(() => {
+                    if (window.fbMethods?.onAuthStateChanged) {
+                        window.fbMethods.onAuthStateChanged(window.fbAuth, u => { setUser(u); setLoading(false); });
+                        clearInterval(check);
+                    }
+                }, 500);
+            }, []);
+
+            if (loading) return <div className="h-screen flex items-center justify-center bg-black">Carregando...</div>;
+
+            if (!user) return (
+                <div className="h-screen flex items-center justify-center p-4">
+                    <div className="login-card shadow-2xl"><h2 className="text-2xl font-black mb-8 text-center text-green-500 italic uppercase">ProCoach Login</h2>
+                        <input type="email" placeholder="E-mail" className="w-full p-4 mb-4 rounded-xl bg-black border border-zinc-800 text-white" onChange={e => setEmail(e.target.value)} />
+                        <input type="password" placeholder="Senha" className="w-full p-4 mb-8 rounded-xl bg-black border border-zinc-800 text-white" onChange={e => setPass(e.target.value)} />
+                        <button onClick={() => window.fbMethods.signInWithEmailAndPassword(window.fbAuth, email, pass).catch(e => alert("Erro!"))} className="w-full bg-green-600 p-4 rounded-xl font-bold uppercase">Entrar</button>
+                    </div>
+                </div>
+            );
+
+            const isTreinador = user.email === "SEU_EMAIL@AQUI.com"; // <-- ADICIONE SEU E-MAIL AQUI
+
+            return (
+                <div className="min-h-screen bg-black">
+                    <div className="flex justify-between p-4 border-b border-zinc-800"><span className="font-black text-green-500">V110</span><button onClick={() => window.fbMethods.signOut(window.fbAuth)} className="text-[10px] uppercase font-bold text-zinc-500">Sair</button></div>
+                    {isTreinador ? <CoachView /> : <AthleteView user={user} />}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
