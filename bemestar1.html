@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ProCoach V110 - Elite System</title>
+    <title>ProCoach V110 - AC Nova Geração</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
@@ -25,7 +25,7 @@
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Sua configuração oficial do Firebase
+        // Configuração oficial do seu banco: bem-estar-aee29
         const firebaseConfig = {
             apiKey: "AIzaSyAqx0MYZ_QuDQFIkBqSGG17p_OUzTI-Bkw",
             authDomain: "bem-estar-aee29.firebaseapp.com",
@@ -45,13 +45,12 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- VISÃO DO ATLETA (CHECK-IN) ---
+        // --- COMPONENTE DO ATLETA ---
         const AthleteView = ({ user }) => {
             const [step, setStep] = useState(1);
             const [wellness, setWellness] = useState({ sono: 1, estresse: 1, fadiga: 1, dor: 1, humor: 1 });
             const [selectedPain, setSelectedPain] = useState([]);
-            
-            // Lista baseada na sua imagem anatômica
+            // Lista baseada na anatomia do futebol
             const locaisDor = ["Pescoço", "Ombro D", "Ombro E", "Peitoral", "Costas (Sup)", "Lombar", "Abdômen", "Púbis", "Glúteo D", "Glúteo E", "Adutor D", "Adutor E", "Coxa Anterior D", "Coxa Anterior E", "Posterior Coxa D", "Posterior Coxa E", "Joelho D", "Joelho E", "Panturrilha D", "Panturrilha E", "Tornozelo D", "Tornozelo E", "Pé D", "Pé E"];
 
             const salvar = () => {
@@ -66,10 +65,10 @@
 
             return (
                 <div className="p-4 max-w-md mx-auto">
-                    <h2 className="text-green-500 font-black mb-6 italic uppercase">Check-in {user.email}</h2>
+                    <h2 className="text-green-500 font-black mb-6 italic uppercase">Check-in do Atleta</h2>
                     {step === 1 ? (
                         <div className="space-y-4">
-                            {['sono', 'estresse', 'fadiga', 'dor', 'humor'].map(id => (
+                            {Object.keys(wellness).map(id => (
                                 <div key={id} className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
                                     <div className="flex justify-between text-xs font-bold uppercase mb-2"><span>{id} (1-7)</span><span className="text-green-500">{wellness[id]}</span></div>
                                     <input type="range" min="1" max="7" value={wellness[id]} onChange={e => setWellness({...wellness, [id]: parseInt(e.target.value)})} className="w-full" />
@@ -90,7 +89,7 @@
             );
         };
 
-        // --- VISÃO DO TREINADOR (DASHBOARD) ---
+        // --- COMPONENTE DO TREINADOR (Dashboard Realtime) ---
         const CoachView = () => {
             const [data, setData] = useState({});
             useEffect(() => {
@@ -101,15 +100,12 @@
 
             return (
                 <div className="p-6">
-                    <h2 className="text-2xl font-black text-green-500 mb-6 italic uppercase">Monitoramento em Tempo Real</h2>
+                    <h2 className="text-2xl font-black text-green-500 mb-6 italic uppercase">Monitoramento Adriano Rodrigues</h2>
                     <div className="grid gap-4">
-                        {Object.entries(data).length === 0 ? <p className="text-zinc-500 italic text-center py-10">Aguardando check-ins dos atletas...</p> : 
+                        {Object.entries(data).length === 0 ? <p className="text-zinc-500 italic text-center py-10">Aguardando dados dos atletas de Maceió...</p> : 
                         Object.entries(data).map(([uid, check]) => (
-                            <div key={uid} className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex justify-between items-center shadow-md">
-                                <div>
-                                    <p className="font-bold text-sm text-zinc-200">{check.atleta}</p>
-                                    <p className="text-[10px] text-red-500 font-bold uppercase mt-1">Dores: {check.dores?.join(', ') || 'Nenhuma'}</p>
-                                </div>
+                            <div key={uid} className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex justify-between items-center">
+                                <div><p className="font-bold text-sm">{check.atleta}</p><p className="text-[10px] text-red-500 font-bold uppercase">Dores: {check.dores?.join(', ') || 'Nenhuma'}</p></div>
                                 <div className="text-right">
                                     <div className="text-2xl font-black text-green-500">{Object.values(check.wellness || {}).reduce((a,b)=>a+b,0)}</div>
                                     <span className="text-[8px] text-zinc-500 uppercase font-bold">Wellness Index</span>
@@ -136,28 +132,24 @@
                 }, 500);
             }, []);
 
-            if (loading) return <div className="h-screen flex items-center justify-center bg-black">Carregando ProCoach...</div>;
+            if (loading) return <div className="h-screen flex items-center justify-center bg-black">Carregando ProCoach V110...</div>;
 
             if (!user) return (
                 <div className="h-screen flex items-center justify-center p-4">
-                    <div className="login-card shadow-2xl animate-fade-in">
-                        <h2 className="text-2xl font-black mb-8 text-center text-green-500 italic uppercase">ProCoach Login</h2>
+                    <div className="login-card shadow-2xl"><h2 className="text-2xl font-black mb-8 text-center text-green-500 italic uppercase tracking-tighter">ProCoach Login</h2>
                         <input type="email" placeholder="E-mail" className="w-full p-4 mb-4 rounded-xl bg-black border border-zinc-800 text-white outline-none focus:border-green-500" onChange={e => setEmail(e.target.value)} />
                         <input type="password" placeholder="Senha" className="w-full p-4 mb-8 rounded-xl bg-black border border-zinc-800 text-white outline-none focus:border-green-500" onChange={e => setPass(e.target.value)} />
-                        <button onClick={() => window.fbMethods.signInWithEmailAndPassword(window.fbAuth, email, pass).catch(e => alert("Erro no login!"))} className="w-full bg-green-600 p-4 rounded-xl font-bold uppercase tracking-widest active:scale-95 transition-all">Entrar</button>
+                        <button onClick={() => window.fbMethods.signInWithEmailAndPassword(window.fbAuth, email, pass).catch(e => alert("Dados incorretos!"))} className="w-full bg-green-600 p-4 rounded-xl font-bold uppercase shadow-lg">Entrar</button>
                     </div>
                 </div>
             );
 
-            // Defina o seu e-mail de treinador aqui
-            const isTreinador = user.email === "SEU_EMAIL@AQUI.com"; 
+            // Troque para o seu e-mail para acessar o painel de treinador
+            const isTreinador = user.email === "adrianocabeca@exemplo.com"; 
 
             return (
                 <div className="min-h-screen bg-black">
-                    <div className="flex justify-between p-4 border-b border-zinc-800 bg-zinc-950">
-                        <span className="font-black text-green-500 italic">PROCOACH V110</span>
-                        <button onClick={() => window.fbMethods.signOut(window.fbAuth)} className="text-[10px] uppercase font-bold text-zinc-500 hover:text-red-500">Sair</button>
-                    </div>
+                    <div className="flex justify-between p-4 border-b border-zinc-800 bg-zinc-950"><span className="font-black text-green-500 italic">V110</span><button onClick={() => window.fbMethods.signOut(window.fbAuth)} className="text-[10px] uppercase font-bold text-zinc-500 hover:text-red-500">Sair</button></div>
                     {isTreinador ? <CoachView /> : <AthleteView user={user} />}
                 </div>
             );
